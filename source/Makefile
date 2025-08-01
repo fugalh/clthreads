@@ -29,10 +29,11 @@ LIBDIR ?= $(PREFIX)/lib$(SUFFIX)
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
     LIBEXT = .dylib
-    SONAME_FLAG = install_name,$(LIBDIR)/$(CLTHREADS_MAJ)
     LDCONFIG = 
     # Override SUFFIX for macOS - use standard /usr/local/lib
     override SUFFIX =
+    override LIBDIR = $(PREFIX)/lib$(SUFFIX)
+    SONAME_FLAG = install_name,$(LIBDIR)/$(CLTHREADS_MAJ)
 else
     LIBEXT = .so
     SONAME_FLAG = soname,$(CLTHREADS_MAJ)
@@ -72,6 +73,7 @@ install:	$(CLTHREADS_MIN)
 ifneq ($(LDCONFIG),)
 	$(LDCONFIG)
 endif
+	ln -sf $(CLTHREADS_MIN) $(DESTDIR)$(LIBDIR)/$(CLTHREADS_MAJ)
 	ln -sf $(CLTHREADS_MIN) $(DESTDIR)$(LIBDIR)/$(CLTHREADS_SO)
 
 uninstall:
