@@ -25,6 +25,20 @@ PREFIX ?= /usr/local
 INCDIR ?= $(PREFIX)/include
 LIBDIR ?= $(PREFIX)/lib$(SUFFIX)
 
+# Platform detection for cross-platform compatibility
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    LIBEXT = .dylib
+    SONAME_FLAG = install_name,$(LIBDIR)/$(CLTHREADS_MAJ)
+    LDCONFIG = 
+    # Override SUFFIX for macOS - use standard /usr/local/lib
+    override SUFFIX =
+else
+    LIBEXT = .so
+    SONAME_FLAG = soname,$(CLTHREADS_MAJ)
+    LDCONFIG = ldconfig
+endif
+
 
 MAJVERS = 2
 MINVERS = 4.2
@@ -38,7 +52,7 @@ LDLFAGS +=
 LDLIBS +=
 
 
-CLTHREADS_SO = libclthreads.so
+CLTHREADS_SO = libclthreads$(LIBEXT)
 CLTHREADS_MAJ = $(CLTHREADS_SO).$(MAJVERS)
 CLTHREADS_MIN = $(CLTHREADS_MAJ).$(MINVERS)
 CLTHREADS_DEP = -lpthread
@@ -47,15 +61,17 @@ CLTHREADS_H = clthreads.h
 
 
 $(CLTHREADS_MIN): $(CLTHREADS_O)
-	$(CXX) -shared $(LDFLAGS) -Wl,-soname,$(CLTHREADS_MAJ) -o $(CLTHREADS_MIN) $(CLTHREADS_O) $(CLTHREADS_DEP)
+	$(CXX) -shared $(LDFLAGS) -Wl,-$(SONAME_FLAG) -o $(CLTHREADS_MIN) $(CLTHREADS_O) $(CLTHREADS_DEP)
 
 
 install:	$(CLTHREADS_MIN)
-	install -d $(DESTDIR)$(PREFIX)/$(INCDIR)
-	install -d $(DESTDIR)$(PREFIX)/$(LIBDIR)
+	install -d $(DESTDIR)$(INCDIR)
+	install -d $(DESTDIR)$(LIBDIR)
 	install -m 644 $(CLTHREADS_H) $(DESTDIR)$(INCDIR)
 	install -m 755 $(CLTHREADS_MIN) $(DESTDIR)$(LIBDIR)
-	ldconfig
+ifneq ($(LDCONFIG),)
+	$(LDCONFIG)
+endif
 	ln -sf $(CLTHREADS_MIN) $(DESTDIR)$(LIBDIR)/$(CLTHREADS_SO)
 
 uninstall:

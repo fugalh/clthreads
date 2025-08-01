@@ -1,0 +1,3 @@
+.claude
+source/*.o
+source/libclthreads*
